@@ -1,6 +1,6 @@
 {
   "name": "coolify-bale",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Lightweight webhook bridge forwarding Coolify notification webhooks to Bale Messenger bots",
   "type": "module",
   "main": "src/server.js",
