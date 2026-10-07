@@ -76,8 +76,8 @@ test('formatCoolifyMessage formats standard deployment payload as Markdown by de
   assert.match(output, /\*Project:\* my-project/);
   assert.match(output, /\*Server:\* production/);
   assert.match(output, /New version successfully deployed/);
-  assert.match(output, /🔗 https:\/\/example\.com/);
-  assert.match(output, /`abc123uuid`/);
+  assert.match(output, /🔗 \[https:\/\/example\.com\]\(https:\/\/example\.com\)/);
+  assert.match(output, /\*Deployment UUID:\* abc123uuid/);
   assert.equal(output.includes('<b>'), false);
   assert.equal(output.includes('<code>'), false);
 });

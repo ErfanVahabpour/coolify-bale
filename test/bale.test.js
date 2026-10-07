@@ -25,7 +25,7 @@ test('redactSensitive strips bot tokens', () => {
 });
 
 test('stripFormatting removes HTML and Markdown formatting tags', () => {
-  assert.equal(stripFormatting('<b>Hello</b> *World* `code`'), 'Hello World code');
+  assert.equal(stripFormatting('<b>Hello</b> *World* `code` [link](https://example.com)'), 'Hello World code link (https://example.com)');
   assert.equal(stripFormatting('&amp; &lt; &gt;'), '& < >');
   assert.equal(stripFormatting(null), '');
 });

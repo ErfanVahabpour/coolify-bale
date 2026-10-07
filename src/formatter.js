@@ -212,7 +212,7 @@ export function formatCoolifyMessage(payload, options = {}) {
       metaLines.push(`*Server:* ${escapeMarkdown(data.server_name)}`);
     }
     if (data.server_uuid) {
-      metaLines.push(`*Server UUID:* \`${escapeMarkdown(data.server_uuid)}\``);
+      metaLines.push(`*Server UUID:* ${escapeMarkdown(data.server_uuid)}`);
     }
     if (data.status) {
       metaLines.push(`*Status:* ${escapeMarkdown(data.status)}`);
@@ -228,16 +228,20 @@ export function formatCoolifyMessage(payload, options = {}) {
       sections.push(escapeMarkdown(bodyText));
     }
 
-    // Link / FQDN (Bale renders plain URLs automatically as clickable links)
+    // Link / FQDN (Bale native link syntax: [text](url))
     const targetUrl = data.fqdn || data.url;
     if (targetUrl) {
       const trimmedUrl = String(targetUrl).trim();
-      sections.push(`🔗 ${trimmedUrl}`);
+      if (isValidHttpUrl(trimmedUrl)) {
+        sections.push(`🔗 [${trimmedUrl}](${trimmedUrl})`);
+      } else {
+        sections.push(`🔗 ${escapeMarkdown(trimmedUrl)}`);
+      }
     }
 
     // Deployment UUID
     if (data.deployment_uuid) {
-      sections.push(`\`${escapeMarkdown(data.deployment_uuid)}\``);
+      sections.push(`*Deployment UUID:* ${escapeMarkdown(data.deployment_uuid)}`);
     }
   }
 

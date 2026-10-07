@@ -30,6 +30,7 @@ export function stripFormatting(text) {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
     .replace(/\\([*`_\[\]])/g, '$1')
     .replace(/[*`_]/g, '');
 }
