@@ -1,0 +1,30 @@
+﻿{
+  "name": "coolify-bale",
+  "version": "1.0.0",
+  "description": "Lightweight webhook bridge forwarding Coolify notification webhooks to Bale Messenger bots",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/"
+  },
+  "keywords": [
+    "coolify",
+    "bale",
+    "webhook",
+    "bridge",
+    "notification",
+    "devops",
+    "bot"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1"
+  }
+}

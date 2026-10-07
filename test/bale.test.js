@@ -1,0 +1,127 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import { redactSensitive, sendToBale, BaleApiError } from '../src/bale.js';
+
+test('redactSensitive strips bot tokens', () => {
+  const text = 'Failed on https://tapi.bale.ai/bot123456:ABC-DEF_xyz/sendMessage';
+  assert.equal(redactSensitive(text), 'Failed on https://tapi.bale.ai/bot[REDACTED]/sendMessage');
+  assert.equal(redactSensitive(null), '');
+});
+
+test('sendToBale successfully sends message to Bale API', async () => {
+  let receivedBody = null;
+  let receivedUrl = null;
+
+  const mockServer = http.createServer((req, res) => {
+    receivedUrl = req.url;
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      receivedBody = JSON.parse(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, result: { message_id: 100 } }));
+    });
+  });
+
+  await new Promise(resolve => mockServer.listen(0, '127.0.0.1', resolve));
+  const port = mockServer.address().port;
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const res = await sendToBale({
+      botToken: 'my-bot-token',
+      chatId: '12345678',
+      text: '<b>Test</b>',
+      disableLinkPreviews: true,
+      baseUrl,
+      timeoutMs: 2000,
+    });
+
+    assert.equal(res.ok, true);
+    assert.equal(receivedUrl, '/botmy-bot-token/sendMessage');
+    assert.equal(receivedBody.chat_id, '12345678');
+    assert.equal(receivedBody.text, '<b>Test</b>');
+    assert.equal(receivedBody.parse_mode, 'HTML');
+    assert.equal(receivedBody.disable_web_page_preview, true);
+  } finally {
+    mockServer.close();
+  }
+});
+
+test('sendToBale retries without disable_web_page_preview if rejected with 400', async () => {
+  let attempts = 0;
+  const requests = [];
+
+  const mockServer = http.createServer((req, res) => {
+    attempts++;
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      const parsed = JSON.parse(body);
+      requests.push(parsed);
+      if (attempts === 1) {
+        // First attempt fails due to unrecognized parameter
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, description: 'Bad Request: unknown parameter disable_web_page_preview' }));
+      } else {
+        // Second attempt succeeds
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, result: { message_id: 101 } }));
+      }
+    });
+  });
+
+  await new Promise(resolve => mockServer.listen(0, '127.0.0.1', resolve));
+  const port = mockServer.address().port;
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const res = await sendToBale({
+      botToken: 'my-bot-token',
+      chatId: '12345678',
+      text: 'Hello',
+      disableLinkPreviews: true,
+      baseUrl,
+      timeoutMs: 2000,
+    });
+
+    assert.equal(res.ok, true);
+    assert.equal(attempts, 2);
+    assert.equal(requests[0].disable_web_page_preview, true);
+    assert.equal(requests[1].disable_web_page_preview, undefined);
+  } finally {
+    mockServer.close();
+  }
+});
+
+test('sendToBale throws BaleApiError on 500 or network failure without leaking token', async () => {
+  const mockServer = http.createServer((req, res) => {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, description: 'Internal Server Error' }));
+  });
+
+  await new Promise(resolve => mockServer.listen(0, '127.0.0.1', resolve));
+  const port = mockServer.address().port;
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    await assert.rejects(
+      () =>
+        sendToBale({
+          botToken: 'secret-token-123',
+          chatId: '12345678',
+          text: 'Hello',
+          baseUrl,
+          timeoutMs: 2000,
+        }),
+      (err) => {
+        assert(err instanceof BaleApiError);
+        assert.equal(err.message.includes('secret-token-123'), false);
+        return true;
+      }
+    );
+  } finally {
+    mockServer.close();
+  }
+});
