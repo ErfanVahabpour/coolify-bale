@@ -3,6 +3,7 @@ FROM node:22-alpine AS runner
 
 # Set production environment
 ENV NODE_ENV=production
+ENV PORT=3000
 
 # Set application directory
 WORKDIR /app
@@ -22,9 +23,9 @@ USER node
 # Expose default HTTP port
 EXPOSE 3000
 
-# Container healthcheck using lightweight built-in wget
+# Container healthcheck using dynamic port from environment variable
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/health || exit 1
+  CMD wget -qO- "http://127.0.0.1:${PORT:-3000}/health" || exit 1
 
 # Start server
 CMD ["node", "src/server.js"]
