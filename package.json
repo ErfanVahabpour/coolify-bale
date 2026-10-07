@@ -21,7 +21,15 @@
     "devops",
     "bot"
   ],
-  "author": "",
+  "author": "Erfan Vahabpour <erfanvahabpour@yahoo.com> (https://github.com/ErfanVahabpour)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ErfanVahabpour/coolify-bale.git"
+  },
+  "homepage": "https://github.com/ErfanVahabpour/coolify-bale#readme",
+  "bugs": {
+    "url": "https://github.com/ErfanVahabpour/coolify-bale/issues"
+  },
   "license": "MIT",
   "dependencies": {
     "dotenv": "^16.4.7",

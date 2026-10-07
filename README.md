@@ -2,10 +2,13 @@
 
 > Production-ready, lightweight webhook bridge connecting **Coolify** notification webhooks to **Bale Messenger** bots.
 
+[English Documentation](README.md) | [مستندات فارسی](README.fa.md)
+
 [![Node.js](https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-5.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Author](https://img.shields.io/badge/Author-Erfan%20Vahabpour-blue)](https://github.com/ErfanVahabpour)
 
 ---
 
@@ -432,6 +435,12 @@ To update an existing installation to the latest version:
 git pull origin main
 docker compose up -d --build
 ```
+
+---
+
+## Author
+
+Developed by **[Erfan Vahabpour](https://github.com/ErfanVahabpour)** (<erfanvahabpour@yahoo.com>).
 
 ---
 
