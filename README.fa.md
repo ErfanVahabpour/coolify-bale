@@ -5,6 +5,7 @@
 [English Documentation](README.md) | [مستندات فارسی](README.fa.md)
 
 [![CI](https://github.com/ErfanVahabpour/coolify-bale/actions/workflows/ci.yml/badge.svg)](https://github.com/ErfanVahabpour/coolify-bale/actions/workflows/ci.yml)
+[![Bale SDK](https://img.shields.io/badge/Bale%20SDK-@erfanvahabpour/bale--bot--sdk-5c6bc0?logo=npm)](https://www.npmjs.com/package/@erfanvahabpour/bale-bot-sdk)
 [![Node.js](https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-5.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)

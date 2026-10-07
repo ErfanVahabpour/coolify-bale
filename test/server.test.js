@@ -3,6 +3,21 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { createApp } from '../src/server.js';
 
+function parseRequestBody(req, body) {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    const params = new URLSearchParams(body);
+    const obj = {};
+    for (const [key, value] of params.entries()) {
+      if (value === 'true') obj[key] = true;
+      else if (value === 'false') obj[key] = false;
+      else obj[key] = value;
+    }
+    return obj;
+  }
+  return JSON.parse(body);
+}
+
 test('Integration: full server routes test', async (t) => {
   // 1. Setup mock Bale server
   let mockBaleShouldFail = false;
@@ -14,10 +29,10 @@ test('Integration: full server routes test', async (t) => {
     req.on('end', () => {
       if (mockBaleShouldFail) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, description: 'Bale internal error' }));
+        res.end(JSON.stringify({ ok: false, error_code: 500, description: 'Bale internal error' }));
         return;
       }
-      receivedBaleMessage = JSON.parse(body);
+      receivedBaleMessage = parseRequestBody(req, body);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, result: { message_id: 1234 } }));
     });

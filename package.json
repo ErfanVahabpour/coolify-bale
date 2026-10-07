@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "coolify-bale",
   "version": "1.0.0",
   "description": "Lightweight webhook bridge forwarding Coolify notification webhooks to Bale Messenger bots",
@@ -32,6 +32,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@erfanvahabpour/bale-bot-sdk": "^1.0.1",
     "dotenv": "^16.4.7",
     "express": "^5.2.1"
   }
