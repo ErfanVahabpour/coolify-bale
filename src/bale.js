@@ -1,4 +1,4 @@
-﻿import { BaleBot, BaleApiError } from '@erfanvahabpour/bale-bot-sdk';
+import { BaleBot, BaleApiError } from '@erfanvahabpour/bale-bot-sdk';
 import { config } from './config.js';
 
 export { BaleApiError };
@@ -17,18 +17,21 @@ export function redactSensitive(input) {
 }
 
 /**
- * Strips HTML tags for graceful fallback if Bale fails to parse HTML entities.
- * @param {string} htmlText
+ * Strips HTML tags and Markdown formatting for graceful fallback if Bale fails to parse entities.
+ * @param {string} text
  * @returns {string}
  */
-function stripHtmlTags(htmlText) {
-  return htmlText
+export function stripFormatting(text) {
+  if (!text) return '';
+  return String(text)
     .replace(/<[^>]*>/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&#39;/g, "'")
+    .replace(/\\([*`_\[\]])/g, '$1')
+    .replace(/[*`_]/g, '');
 }
 
 /**
@@ -68,13 +71,14 @@ export function getBaleBot(token, baseUrl = config.baleApiBaseUrl, timeoutMs = c
 
 /**
  * Sends a notification message to a Bale chat using @erfanvahabpour/bale-bot-sdk.
- * Implements graceful fallback if optional parameters (like disable_web_page_preview or HTML entities)
+ * Implements graceful fallback if optional parameters (like disable_web_page_preview or formatting)
  * are rejected by Bale's API parser.
  *
  * @param {object} params
  * @param {string} params.botToken - Bale bot token
  * @param {string} params.chatId - Target Bale chat ID
- * @param {string} params.text - HTML-formatted message
+ * @param {string} params.text - Formatted message
+ * @param {string} [params.parseMode] - Parse mode ('Markdown' or 'HTML')
  * @param {boolean} [params.disableLinkPreviews=true] - Whether to disable link previews
  * @param {string} [params.baseUrl] - Optional Bale API base URL override
  * @param {number} [params.timeoutMs] - Request timeout in milliseconds
@@ -85,6 +89,7 @@ export async function sendToBale(params) {
     botToken,
     chatId,
     text,
+    parseMode = config.parseMode,
     disableLinkPreviews = config.disableLinkPreviews,
     baseUrl = config.baleApiBaseUrl,
     timeoutMs = config.baleRequestTimeoutMs,
@@ -103,8 +108,11 @@ export async function sendToBale(params) {
   const payload = {
     chat_id: chatId,
     text,
-    parse_mode: 'HTML',
   };
+
+  if (parseMode) {
+    payload.parse_mode = parseMode;
+  }
 
   if (disableLinkPreviews) {
     payload.disable_web_page_preview = true;
@@ -121,15 +129,15 @@ export async function sendToBale(params) {
       try {
         return await bot.call('sendMessage', fallbackPayload);
       } catch (retryErr) {
-        // Continue to HTML fallback below if needed
+        // Continue to formatting fallback below if needed
       }
     }
 
-    // If 400 Bad Request indicates entity/HTML parse error, retry as plain text
-    if (err.status === 400 && payload.parse_mode === 'HTML') {
+    // If 400 Bad Request indicates entity/formatting parse error, retry as plain text
+    if (err.status === 400 && payload.parse_mode) {
       const plainTextPayload = {
         chat_id: payload.chat_id,
-        text: stripHtmlTags(payload.text),
+        text: stripFormatting(payload.text),
       };
       try {
         return await bot.call('sendMessage', plainTextPayload);

@@ -1,17 +1,24 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  escapeHtml,
   humanizeEventName,
   resolveEventMeta,
+  escapeHtml,
+  escapeMarkdown,
   formatCoolifyMessage,
+  BALE_MAX_MESSAGE_LENGTH,
 } from '../src/formatter.js';
 
-test('escapeHtml handles dangerous characters', () => {
-  assert.equal(escapeHtml('<script>alert("xss")&\'</script>'), '&lt;script&gt;alert(&quot;xss&quot;)&amp;&#39;&lt;/script&gt;');
+test('escapeMarkdown escapes special markdown characters', () => {
+  assert.equal(escapeMarkdown('hello *world* `code` [link] _italics_'), 'hello \\*world\\* \\`code\\` \\[link\\] \\_italics\\_');
+  assert.equal(escapeMarkdown(null), '');
+  assert.equal(escapeMarkdown(undefined), '');
+});
+
+test('escapeHtml escapes HTML special characters', () => {
+  assert.equal(escapeHtml('<script>alert("xss")&foo\'bar\'</script>'), '&lt;script&gt;alert(&quot;xss&quot;)&amp;foo&#39;bar&#39;&lt;/script&gt;');
   assert.equal(escapeHtml(null), '');
   assert.equal(escapeHtml(undefined), '');
-  assert.equal(escapeHtml(123), '123');
 });
 
 test('humanizeEventName formats unknown events nicely', () => {
@@ -50,7 +57,7 @@ test('resolveEventMeta maps known and unknown events', () => {
   });
 });
 
-test('formatCoolifyMessage formats standard deployment payload', () => {
+test('formatCoolifyMessage formats standard deployment payload as Markdown by default', () => {
   const payload = {
     event: 'deployment_success',
     success: true,
@@ -64,40 +71,55 @@ test('formatCoolifyMessage formats standard deployment payload', () => {
 
   const output = formatCoolifyMessage(payload);
 
-  assert.match(output, /🚀 <b>Deployment Success<\/b>/);
-  assert.match(output, /<b>Application:<\/b> my-app/);
-  assert.match(output, /<b>Project:<\/b> my-project/);
-  assert.match(output, /<b>Server:<\/b> production/);
+  assert.match(output, /🚀 \*Deployment Success\*/);
+  assert.match(output, /\*Application:\* my-app/);
+  assert.match(output, /\*Project:\* my-project/);
+  assert.match(output, /\*Server:\* production/);
   assert.match(output, /New version successfully deployed/);
-  assert.match(output, /🔗 <a href="https:\/\/example\.com">https:\/\/example\.com<\/a>/);
-  assert.match(output, /<code>abc123uuid<\/code>/);
+  assert.match(output, /🔗 https:\/\/example\.com/);
+  assert.match(output, /`abc123uuid`/);
+  assert.equal(output.includes('<b>'), false);
+  assert.equal(output.includes('<code>'), false);
 });
 
-test('formatCoolifyMessage escapes user strings and prevents injection', () => {
+test('formatCoolifyMessage supports HTML mode when requested', () => {
+  const payload = {
+    event: 'deployment_success',
+    success: true,
+    message: 'New version successfully deployed',
+    application_name: 'my-app',
+    deployment_uuid: 'abc123uuid',
+    fqdn: 'https://example.com',
+  };
+
+  const output = formatCoolifyMessage(payload, { parseMode: 'HTML' });
+
+  assert.match(output, /🚀 <b>Deployment Success<\/b>/);
+  assert.match(output, /<b>Application:<\/b> my-app/);
+  assert.match(output, /<code>abc123uuid<\/code>/);
+  assert.match(output, /🔗 <a href="https:\/\/example\.com">https:\/\/example\.com<\/a>/);
+});
+
+test('formatCoolifyMessage escapes user strings and prevents markdown breaking', () => {
   const payload = {
     event: 'test',
-    application_name: '<script>evil()</script>',
-    project_name: '<b>bold</b>',
-    message: 'Hello & welcome <world>',
-    deployment_uuid: 'uuid&123',
-    fqdn: 'https://example.com?a=1&b=2',
+    application_name: 'app_*test*_[v1]',
+    project_name: 'proj`code`',
+    message: 'Hello *world*',
   };
 
   const output = formatCoolifyMessage(payload);
 
-  assert.equal(output.includes('<script>'), false);
-  assert.equal(output.includes('&lt;script&gt;evil()&lt;/script&gt;'), true);
-  assert.equal(output.includes('&lt;b&gt;bold&lt;/b&gt;'), true);
-  assert.equal(output.includes('Hello &amp; welcome &lt;world&gt;'), true);
-  assert.equal(output.includes('uuid&amp;123'), true);
-  assert.equal(output.includes('https://example.com?a=1&amp;b=2'), true);
+  assert.equal(output.includes('app\\_\\*test\\*\\_\\[v1\\]'), true);
+  assert.equal(output.includes('proj\\`code\\`'), true);
+  assert.equal(output.includes('Hello \\*world\\*'), true);
 });
 
 test('formatCoolifyMessage handles missing fields gracefully', () => {
   const payload = {};
   const output = formatCoolifyMessage(payload);
 
-  assert.match(output, /🔔 <b>Notification<\/b>/);
+  assert.match(output, /🔔 \*Notification\*/);
   assert.equal(output.includes('Application:'), false);
   assert.equal(output.includes('Server:'), false);
   assert.equal(output.includes('🔗'), false);
@@ -112,7 +134,7 @@ test('formatCoolifyMessage appends and truncates raw payload when requested', ()
 
   const output = formatCoolifyMessage(payload, { includeRawPayload: true });
 
-  assert.match(output, /<b>Raw Payload:<\/b>/);
-  assert.equal(output.length <= 4000, true);
+  assert.match(output, /\*Raw Payload:\*/);
+  assert.equal(output.length <= BALE_MAX_MESSAGE_LENGTH, true);
   assert.match(output, /\(truncated\)/);
 });

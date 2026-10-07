@@ -1,7 +1,7 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { redactSensitive, sendToBale, BaleApiError } from '../src/bale.js';
+import { redactSensitive, stripFormatting, sendToBale, BaleApiError } from '../src/bale.js';
 
 function parseRequestBody(req, body) {
   const contentType = req.headers['content-type'] || '';
@@ -24,7 +24,13 @@ test('redactSensitive strips bot tokens', () => {
   assert.equal(redactSensitive(null), '');
 });
 
-test('sendToBale successfully sends message to Bale API', async () => {
+test('stripFormatting removes HTML and Markdown formatting tags', () => {
+  assert.equal(stripFormatting('<b>Hello</b> *World* `code`'), 'Hello World code');
+  assert.equal(stripFormatting('&amp; &lt; &gt;'), '& < >');
+  assert.equal(stripFormatting(null), '');
+});
+
+test('sendToBale successfully sends message to Bale API with Markdown parse_mode', async () => {
   let receivedBody = null;
   let receivedUrl = null;
 
@@ -47,7 +53,7 @@ test('sendToBale successfully sends message to Bale API', async () => {
     const res = await sendToBale({
       botToken: 'my-bot-token',
       chatId: '12345678',
-      text: '<b>Test</b>',
+      text: '*Test*',
       disableLinkPreviews: true,
       baseUrl,
       timeoutMs: 2000,
@@ -56,8 +62,8 @@ test('sendToBale successfully sends message to Bale API', async () => {
     assert.equal(res.message_id, 100);
     assert.equal(receivedUrl, '/botmy-bot-token/sendMessage');
     assert.equal(receivedBody.chat_id, '12345678');
-    assert.equal(receivedBody.text, '<b>Test</b>');
-    assert.equal(receivedBody.parse_mode, 'HTML');
+    assert.equal(receivedBody.text, '*Test*');
+    assert.equal(receivedBody.parse_mode, 'Markdown');
     assert.equal(receivedBody.disable_web_page_preview, true);
   } finally {
     mockServer.close();

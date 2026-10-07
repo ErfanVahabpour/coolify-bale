@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { config, loadWebhooks } from './config.js';
 import { authenticateRequest } from './auth.js';
@@ -119,7 +119,7 @@ export function createApp(webhooks, appConfig = config) {
       });
     }
 
-    // 2. Authentication: Require Authorization: Bearer <secret>
+    // 2. Authentication: Support Bearer <secret> or ?token=<secret> / ?secret=<secret>
     const queryToken = req.query?.token || req.query?.secret;
     const isAuthorized = authenticateRequest(req.headers.authorization, webhook.secret, queryToken);
     if (!isAuthorized) {
@@ -136,12 +136,14 @@ export function createApp(webhooks, appConfig = config) {
     try {
       const formattedMessage = formatCoolifyMessage(payload, {
         includeRawPayload: appConfig.includeRawPayload,
+        parseMode: appConfig.parseMode,
       });
 
       await sendToBale({
         botToken: webhook.baleBotToken,
         chatId: webhook.baleChatId,
         text: formattedMessage,
+        parseMode: appConfig.parseMode,
         disableLinkPreviews: appConfig.disableLinkPreviews,
         baseUrl: appConfig.baleApiBaseUrl,
         timeoutMs: appConfig.baleRequestTimeoutMs,
@@ -197,6 +199,7 @@ export function startServer() {
     console.log(` coolify-bale bridge running`);
     console.log(` Host: http://${config.host}:${config.port}`);
     console.log(` Configured Webhooks: ${webhooks.size}`);
+    console.log(` Parse mode: ${config.parseMode}`);
     console.log(` Raw payload included: ${config.includeRawPayload}`);
     console.log(` Link previews disabled: ${config.disableLinkPreviews}`);
     console.log(`========================================`);

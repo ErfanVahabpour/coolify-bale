@@ -1,4 +1,4 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { createApp } from '../src/server.js';
@@ -61,6 +61,7 @@ test('Integration: full server routes test', async (t) => {
     logRequests: false,
     includeRawPayload: false,
     disableLinkPreviews: true,
+    parseMode: 'Markdown',
     rateLimitWindowMs: 60000,
     rateLimitMax: 100,
     baleApiBaseUrl: baleBaseUrl,
@@ -171,6 +172,7 @@ test('Integration: full server routes test', async (t) => {
     const body = await res.json();
     assert.deepEqual(body, { ok: true });
     assert.match(receivedBaleMessage.text, /query-token-app/);
+    assert.equal(receivedBaleMessage.parse_mode, 'Markdown');
   });
 
   // Successful webhook forward
@@ -198,8 +200,9 @@ test('Integration: full server routes test', async (t) => {
 
     assert(receivedBaleMessage !== null);
     assert.equal(receivedBaleMessage.chat_id, 'chat999');
-    assert.match(receivedBaleMessage.text, /🚀 <b>Deployment Success<\/b>/);
+    assert.match(receivedBaleMessage.text, /🚀 \*Deployment Success\*/);
     assert.match(receivedBaleMessage.text, /test-app/);
+    assert.equal(receivedBaleMessage.parse_mode, 'Markdown');
   });
 
   // Bale failure returns 502 without leaking secrets

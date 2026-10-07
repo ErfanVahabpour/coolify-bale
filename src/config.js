@@ -102,6 +102,7 @@ export const config = {
   logRequests: parseBoolean(process.env.LOG_REQUESTS, true),
   includeRawPayload: parseBoolean(process.env.INCLUDE_RAW_PAYLOAD, false),
   disableLinkPreviews: parseBoolean(process.env.DISABLE_LINK_PREVIEWS, true),
+  parseMode: (process.env.PARSE_MODE || 'Markdown').trim(),
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
   rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '60', 10),
   baleApiBaseUrl: (process.env.BALE_API_BASE_URL || 'https://tapi.bale.ai').replace(/\/+$/, ''),

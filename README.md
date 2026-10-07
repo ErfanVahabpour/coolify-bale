@@ -133,7 +133,8 @@ nano .env
 | `HOST` | String | `0.0.0.0` | Bind host address. |
 | `LOG_REQUESTS` | Boolean | `true` | Log incoming request methods, paths, and status codes. |
 | `WEBHOOKS` | JSON Array | *Required* | JSON array containing one or more webhook configurations. |
-| `INCLUDE_RAW_PAYLOAD`| Boolean | `false` | When `true`, appends the original Coolify JSON in `<pre><code>`. |
+| `PARSE_MODE` | String | `Markdown` | Message formatting syntax: `Markdown` (native for Bale Messenger clients) or `HTML`. |
+| `INCLUDE_RAW_PAYLOAD`| Boolean | `false` | When `true`, appends the original Coolify JSON in a code block. |
 | `DISABLE_LINK_PREVIEWS`| Boolean| `true` | When `true`, suppresses link previews/unfurling in Bale chats. |
 | `RATE_LIMIT_WINDOW_MS`| Number | `60000` | In-memory rate limiting window in milliseconds (default 1 min). |
 | `RATE_LIMIT_MAX` | Number | `60` | Maximum requests per window per IP. |
