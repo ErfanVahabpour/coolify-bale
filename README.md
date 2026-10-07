@@ -4,6 +4,7 @@
 
 [English Documentation](README.md) | [مستندات فارسی](README.fa.md)
 
+[![CI](https://github.com/ErfanVahabpour/coolify-bale/actions/workflows/ci.yml/badge.svg)](https://github.com/ErfanVahabpour/coolify-bale/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-5.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
