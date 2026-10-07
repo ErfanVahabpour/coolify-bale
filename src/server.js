@@ -120,7 +120,8 @@ export function createApp(webhooks, appConfig = config) {
     }
 
     // 2. Authentication: Require Authorization: Bearer <secret>
-    const isAuthorized = authenticateRequest(req.headers.authorization, webhook.secret);
+    const queryToken = req.query?.token || req.query?.secret;
+    const isAuthorized = authenticateRequest(req.headers.authorization, webhook.secret, queryToken);
     if (!isAuthorized) {
       return res.status(401).json({
         ok: false,

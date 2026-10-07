@@ -20,32 +20,40 @@ export function timingSafeCompare(a, b) {
 }
 
 /**
- * Validates the Authorization header against the expected webhook secret.
- * Requires: Authorization: Bearer <secret>
- * Does NOT accept secrets from URL parameters or request body.
+ * Validates request credentials against the expected webhook secret.
+ * Supports:
+ *   1. Authorization: Bearer <secret> (standard header)
+ *   2. Query parameter: ?token=<secret> or ?secret=<secret> (for webhook callers without custom header support)
  *
  * @param {string | undefined} authHeader
  * @param {string} expectedSecret
+ * @param {string | undefined} [queryToken]
  * @returns {boolean}
  */
-export function authenticateRequest(authHeader, expectedSecret) {
-  if (!authHeader || typeof authHeader !== 'string') {
-    return false;
+export function authenticateRequest(authHeader, expectedSecret, queryToken = undefined) {
+  // 1. Check Authorization: Bearer <token>
+  if (authHeader && typeof authHeader === 'string') {
+    const trimmed = authHeader.trim();
+    const spaceIndex = trimmed.indexOf(' ');
+
+    if (spaceIndex !== -1) {
+      const scheme = trimmed.slice(0, spaceIndex);
+      const token = trimmed.slice(spaceIndex + 1).trim();
+
+      if (scheme.toLowerCase() === 'bearer' && token) {
+        if (timingSafeCompare(token, expectedSecret)) {
+          return true;
+        }
+      }
+    }
   }
 
-  const trimmed = authHeader.trim();
-  const spaceIndex = trimmed.indexOf(' ');
-
-  if (spaceIndex === -1) {
-    return false;
+  // 2. Check query parameter fallback (?token=... or ?secret=...)
+  if (queryToken && typeof queryToken === 'string') {
+    if (timingSafeCompare(queryToken.trim(), expectedSecret)) {
+      return true;
+    }
   }
 
-  const scheme = trimmed.slice(0, spaceIndex);
-  const token = trimmed.slice(spaceIndex + 1).trim();
-
-  if (scheme.toLowerCase() !== 'bearer' || !token) {
-    return false;
-  }
-
-  return timingSafeCompare(token, expectedSecret);
+  return false;
 }

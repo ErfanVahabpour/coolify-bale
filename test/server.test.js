@@ -153,6 +153,26 @@ test('Integration: full server routes test', async (t) => {
     assert.match(body.error, /Malformed JSON payload/);
   });
 
+  // Successful webhook forward using query token (?token=...)
+  await t.test('POST /webhook/production?token=... forwards to Bale and returns 200', async () => {
+    mockBaleShouldFail = false;
+    receivedBaleMessage = null;
+
+    const res = await fetch(`${appBaseUrl}/webhook/production?token=prod-secret-key-999`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'deployment_success',
+        application_name: 'query-token-app',
+      }),
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.deepEqual(body, { ok: true });
+    assert.match(receivedBaleMessage.text, /query-token-app/);
+  });
+
   // Successful webhook forward
   await t.test('POST /webhook/production with valid payload forwards to Bale and returns 200', async () => {
     mockBaleShouldFail = false;

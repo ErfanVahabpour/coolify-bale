@@ -33,3 +33,15 @@ test('authenticateRequest validates Bearer authorization headers', () => {
   assert.equal(authenticateRequest('Bearer', secret), false);
   assert.equal(authenticateRequest(`${secret}`, secret), false);
 });
+
+test('authenticateRequest validates query token fallback', () => {
+  const secret = 'super-secret-token-xyz';
+
+  // Valid query token without header
+  assert.equal(authenticateRequest(undefined, secret, secret), true);
+  assert.equal(authenticateRequest('', secret, `  ${secret}  `), true);
+
+  // Invalid query token
+  assert.equal(authenticateRequest(undefined, secret, 'wrong-token'), false);
+  assert.equal(authenticateRequest(undefined, secret, undefined), false);
+});
