@@ -45,7 +45,9 @@ export function stripFormatting(text) {
 export function createUrlReplyMarkup(text) {
   const urls = new Set();
   const message = String(text || '');
-  const matches = message.match(/https?:\/\/[^\s<>"'`]+/gi) || [];
+  const markdownLinkTargets = [...message.matchAll(/\]\((https?:\/\/[^)\s]+)\)/gi)].map(match => match[1]);
+  const plainUrls = message.match(/https?:\/\/[^\s<>"'`\])}]+/gi) || [];
+  const matches = [...markdownLinkTargets, ...plainUrls];
 
   for (const match of matches) {
     let candidate = match
@@ -53,13 +55,6 @@ export function createUrlReplyMarkup(text) {
       .replace(/&quot;/gi, '"')
       .replace(/&#39;/gi, "'");
     candidate = candidate.replace(/[.,!?;:]+$/g, '');
-    while (/[)\]}]$/.test(candidate)) {
-      const closing = candidate.at(-1);
-      const opening = closing === ')' ? '(' : closing === ']' ? '[' : '{';
-      if (candidate.split(closing).length <= candidate.split(opening).length) break;
-      candidate = candidate.slice(0, -1);
-    }
-
     try {
       const parsed = new URL(candidate);
       if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
