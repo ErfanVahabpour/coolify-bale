@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { config, loadWebhooks } from './config.js';
 import { authenticateRequest } from './auth.js';
 import { formatCoolifyMessage } from './formatter.js';
-import { sendToBale, redactSensitive } from './bale.js';
+import { createUrlReplyMarkup, sendToBale, redactSensitive } from './bale.js';
 
 /**
  * Creates an in-memory rate limiter middleware.
@@ -139,7 +139,8 @@ export function createApp(webhooks, appConfig = config) {
         parseMode: appConfig.parseMode,
       });
 
-      await sendToBale({
+      const requestedButtons = createUrlReplyMarkup(formattedMessage)?.inline_keyboard.flat().length || 0;
+      const sentMessage = await sendToBale({
         botToken: webhook.baleBotToken,
         chatId: webhook.baleChatId,
         text: formattedMessage,
@@ -149,7 +150,8 @@ export function createApp(webhooks, appConfig = config) {
         timeoutMs: appConfig.baleRequestTimeoutMs,
       });
 
-      console.log(`[${webhook.id}] forwarded ${eventName} to Bale`);
+      const returnedButtons = sentMessage?.reply_markup?.inline_keyboard?.flat().length || 0;
+      console.log(`[${webhook.id}] forwarded ${eventName} to Bale (URL buttons requested: ${requestedButtons}, returned: ${returnedButtons})`);
       return res.status(200).json({ ok: true });
     } catch (err) {
       console.error(`[${webhook.id}] Bale API error: ${redactSensitive(err.message)}`);
