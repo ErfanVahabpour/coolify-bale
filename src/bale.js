@@ -36,6 +36,67 @@ export function stripFormatting(text) {
 }
 
 /**
+ * Finds distinct HTTP(S) URLs in a formatted message and turns them into
+ * inline keyboard buttons. Markdown and HTML links are both covered, as are
+ * plain URLs included in message text or the optional raw payload.
+ * @param {string} text
+ * @returns {{ inline_keyboard: Array<Array<{text: string, url: string}>> }|undefined}
+ */
+export function createUrlReplyMarkup(text) {
+  const urls = new Set();
+  const message = String(text || '');
+  const matches = message.match(/https?:\/\/[^\s<>"'`]+/gi) || [];
+
+  for (const match of matches) {
+    let candidate = match
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'");
+    candidate = candidate.replace(/[.,!?;:]+$/g, '');
+    while (/[)\]}]$/.test(candidate)) {
+      const closing = candidate.at(-1);
+      const opening = closing === ')' ? '(' : closing === ']' ? '[' : '{';
+      if (candidate.split(closing).length <= candidate.split(opening).length) break;
+      candidate = candidate.slice(0, -1);
+    }
+
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        urls.add(parsed.href);
+      }
+    } catch {
+      // Ignore malformed URL-like text.
+    }
+  }
+
+  if (urls.size === 0) return undefined;
+
+  const normalizedMessage = message.toLowerCase();
+  const inferLabel = url => {
+    const path = new URL(url).pathname.toLowerCase();
+    if (/\/server(?:\/|$)/.test(path) || normalizedMessage.includes('server unreachable') || normalizedMessage.includes('server reachable')) {
+      return 'Open Server';
+    }
+    if (/\/backup(?:\/|$)/.test(path) || normalizedMessage.includes('backup')) {
+      return 'Open Backup';
+    }
+    if (/\/project(?:\/|$)/.test(path)) return 'Open Project';
+    if (/\/application(?:\/|$)/.test(path) || normalizedMessage.includes('deployment') || normalizedMessage.includes('application:')) {
+      return 'Open Application';
+    }
+    if (/\/environment(?:\/|$)/.test(path)) return 'Open Environment';
+    return 'Open Link';
+  };
+
+  return {
+    inline_keyboard: [...urls].map(url => {
+      return [{ text: inferLabel(url), url }];
+    }),
+  };
+}
+
+/**
  * Normalizes base URL so it matches BaleBot's requirement of ending in /bot.
  * @param {string} url
  * @returns {string}
@@ -111,6 +172,11 @@ export async function sendToBale(params) {
     text,
   };
 
+  const replyMarkup = createUrlReplyMarkup(text);
+  if (replyMarkup) {
+    payload.reply_markup = replyMarkup;
+  }
+
   if (parseMode) {
     payload.parse_mode = parseMode;
   }
@@ -140,6 +206,9 @@ export async function sendToBale(params) {
         chat_id: payload.chat_id,
         text: stripFormatting(payload.text),
       };
+      if (payload.reply_markup) {
+        plainTextPayload.reply_markup = payload.reply_markup;
+      }
       try {
         return await bot.call('sendMessage', plainTextPayload);
       } catch {
